@@ -1,2 +1,2 @@
-# zenos-publications-jobs
+# zenos-publication-jobs
 Publication jobs for Zenos
