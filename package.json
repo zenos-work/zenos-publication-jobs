@@ -1,0 +1,13 @@
+{
+  "name": "zenos-publications-jobs",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "python3 -m py_compile src/index.py"
+  },
+  "devDependencies": {
+    "wrangler": "^4.70.0"
+  }
+}

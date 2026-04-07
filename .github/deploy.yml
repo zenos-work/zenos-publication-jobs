@@ -1,0 +1,29 @@
+name: Deploy zenos-publications-jobs
+
+on:
+  push:
+    branches: [development, main]
+    paths:
+      - "src/**/*.py"
+      - "wrangler.toml"
+      - ".github/workflows/deploy.yml"
+      - "README.md"
+      - ".dev.vars.example"
+      - "package.json"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy Python worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
