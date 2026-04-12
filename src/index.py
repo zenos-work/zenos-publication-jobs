@@ -707,6 +707,69 @@ async def _upsert_subscription(env, email: str, status: str, source: str = "web"
     )
 
 
+async def _run_course_certificate_job(env, source: str = "manual") -> dict:
+    started_at = _now_iso()
+    limit = _to_positive_int(_env_str(env, "COURSE_CERTIFICATE_JOB_LIMIT", "200"), 200)
+    certificate_base = _env_str(env, "COURSE_CERTIFICATE_BASE_URL", "https://zenos.work/certificates").rstrip("/")
+
+    rows = await _d1_all(
+        env,
+        """
+        SELECT ce.id AS enrollment_id, ce.course_id, ce.user_id
+        FROM course_enrollments ce
+        LEFT JOIN certificates cert ON cert.enrollment_id = ce.id
+        WHERE ce.status = 'completed'
+          AND cert.id IS NULL
+        ORDER BY ce.completed_at DESC, ce.enrolled_at DESC
+        LIMIT ?
+        """,
+        (limit,),
+    )
+
+    issued = 0
+    failures = []
+    for row in rows:
+        try:
+            cert_id = str(uuid.uuid4())
+            cert_url = f"{certificate_base}/{cert_id}"
+            await _d1_run(
+                env,
+                """
+                INSERT INTO certificates (id, course_id, user_id, enrollment_id, certificate_url, issued_at)
+                VALUES (?, ?, ?, ?, ?, datetime('now'))
+                """,
+                (
+                    cert_id,
+                    str(row.get("course_id") or ""),
+                    str(row.get("user_id") or ""),
+                    str(row.get("enrollment_id") or ""),
+                    cert_url,
+                ),
+            )
+            issued += 1
+        except Exception as error:
+            failures.append(
+                {
+                    "enrollment_id": row.get("enrollment_id"),
+                    "error": str(error),
+                }
+            )
+
+    return {
+        "ok": len(failures) == 0,
+        "job": "course-certificates",
+        "startedAt": started_at,
+        "finishedAt": _now_iso(),
+        "summary": f"Issued {issued} certificates, {len(failures)} failures (source={source}).",
+        "details": {
+            "source": source,
+            "candidates": len(rows),
+            "issued": issued,
+            "failures": failures,
+        },
+    }
+
+
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
         parsed = urlparse(str(request.url))
@@ -753,12 +816,14 @@ class Default(WorkerEntrypoint):
                     result = await _run_weekly_newsletter(self.env, source=source)
                 elif job in {"monthly-magazine", "monthly-ebook", "monthly-emagazine"}:
                     result = await _run_monthly_magazine(self.env, source=source)
+                elif job in {"course-certificates", "courses-certificates"}:
+                    result = await _run_course_certificate_job(self.env, source=source)
                 else:
                     return _json_response(
                         {
                             "ok": False,
                             "error": "unknown job",
-                            "allowed": ["weekly-newsletter", "monthly-magazine"],
+                            "allowed": ["weekly-newsletter", "monthly-magazine", "course-certificates"],
                         },
                         status=400,
                     )
@@ -776,6 +841,7 @@ class Default(WorkerEntrypoint):
                     "/newsletter/unsubscribe?email=<email>&token=<signed-token>",
                     "/jobs/run?job=weekly-newsletter",
                     "/jobs/run?job=monthly-magazine",
+                    "/jobs/run?job=course-certificates",
                 ],
             }
         )
