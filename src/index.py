@@ -665,6 +665,39 @@ async def _run_monthly_magazine(env, source: str = "scheduled") -> dict:
     }
 
 
+async def _trigger_e2e_runner(env) -> dict:
+    webhook_url = _env_str(env, "E2E_RUNNER_WEBHOOK_URL", "")
+    if not webhook_url:
+        return {"ok": False, "error": "E2E_RUNNER_WEBHOOK_URL is not configured", "triggered": False}
+
+    try:
+        headers = {"content-type": "application/json"}
+        auth_header = _env_str(env, "E2E_RUNNER_AUTH_HEADER", "").strip()
+        auth_token = _env_str(env, "E2E_RUNNER_AUTH_TOKEN", "").strip()
+        if auth_header and auth_token:
+            headers[auth_header] = auth_token
+
+        payload = {
+            "source": "zenos-publication-jobs",
+            "task": "weekly-e2e",
+            "command": "./scripts/run-e2e.sh --ci",
+            "requestedAt": _now_iso(),
+            "timezone": "Asia/Kolkata",
+            "schedule": "Sunday 00:00 IST",
+        }
+
+        response = await fetch(webhook_url, method="POST", headers=headers, body=json.dumps(payload))
+        text = await response.text()
+        return {
+            "ok": response.status == 200,
+            "status": response.status,
+            "triggered": True,
+            "response": text[:500] if text else "",
+        }
+    except Exception as error:
+        return {"ok": False, "error": str(error), "triggered": False}
+
+
 async def _upsert_subscription(env, email: str, status: str, source: str = "web"):
     normalized = _normalize_email(email)
     if not _valid_email(normalized):
@@ -854,6 +887,9 @@ class Default(WorkerEntrypoint):
         try:
             if cron == weekly:
                 result = await _run_weekly_newsletter(self.env, source="scheduled")
+                # Trigger E2E tests after weekly newsletter
+                e2e_result = await _trigger_e2e_runner(self.env)
+                result["e2e_trigger"] = e2e_result
             elif cron == monthly:
                 result = await _run_monthly_magazine(self.env, source="scheduled")
             else:

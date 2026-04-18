@@ -9,16 +9,21 @@ binding = "DB"
 database_name = "prd-zenos-blog-db"
 database_id = "fa9659e2-584d-478f-97b9-2bcfdae5f309"
 
+# 4 consolidated crons total across zenos-work Cloudflare workers:
+# (1) Cache warming: */10 * * * * via zenos-performance-jobs
+# (2) Notifications: */5 * * * * via zenos-performance-jobs  
+# (3) Weekly newsletter + E2E trigger: 30 18 * * 0 (Sunday)
+# (4) Monthly magazine: 30 18 1 * * (1st of month)
 [triggers]
 crons = [
-  "30 18 * * SUN",
+  "30 18 * * 0",
   "30 18 1 * *"
 ]
 
 [vars]
 ENVIRONMENT = "production"
 API_BASE_URL = "https://api.zenos.work"
-NEWSLETTER_WEEKLY_CRON = "30 18 * * SUN"
+NEWSLETTER_WEEKLY_CRON = "30 18 * * 0"
 MAGAZINE_MONTHLY_CRON = "30 18 1 * *"
 PUBLICATION_REQUIRE_APPROVAL = "false"
 MAGAZINE_TARGET_PAGES = "80"
@@ -29,6 +34,11 @@ MAGAZINE_TOP_ARTICLE_LIMIT = "60"
 NEWSLETTER_FROM = "Zenos Weekly <newsletter@zenos.work>"
 MAGAZINE_FROM = "Zenos Magazine <magazine@zenos.work>"
 RESEND_FROM = "editorial@zenos.work"
+# E2E trigger on weekly newsletter run (Sunday 18:30 UTC = Sunday midnight IST)
+E2E_TRIGGER_ENABLED = "true"
+E2E_RUNNER_WEBHOOK_URL = ""
+E2E_RUNNER_AUTH_HEADER = ""
+E2E_RUNNER_AUTH_TOKEN = ""
 
 [env.staging]
 [[env.staging.d1_databases]]
