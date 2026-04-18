@@ -11,14 +11,14 @@ database_id = "fa9659e2-584d-478f-97b9-2bcfdae5f309"
 
 [triggers]
 crons = [
-  "30 18 * * 0",
+  "30 18 * * SUN",
   "30 18 1 * *"
 ]
 
 [vars]
 ENVIRONMENT = "production"
 API_BASE_URL = "https://api.zenos.work"
-NEWSLETTER_WEEKLY_CRON = "30 18 * * 0"
+NEWSLETTER_WEEKLY_CRON = "30 18 * * SUN"
 MAGAZINE_MONTHLY_CRON = "30 18 1 * *"
 PUBLICATION_REQUIRE_APPROVAL = "false"
 MAGAZINE_TARGET_PAGES = "80"
@@ -39,7 +39,7 @@ database_id = "4aa50a0e-58a7-4898-874d-63859e6b5f11"
 [env.staging.vars]
 ENVIRONMENT = "staging"
 API_BASE_URL = "https://staging-api.zenos.work"
-NEWSLETTER_WEEKLY_CRON = "30 18 * * 0"
+NEWSLETTER_WEEKLY_CRON = "30 18 * * SUN"
 MAGAZINE_MONTHLY_CRON = "30 18 1 * *"
 PUBLICATION_REQUIRE_APPROVAL = "false"
 MAGAZINE_TARGET_PAGES = "80"
