@@ -16,7 +16,7 @@ database_id = "fa9659e2-584d-478f-97b9-2bcfdae5f309"
 # (4) Monthly magazine: 30 18 1 * * (1st of month)
 [triggers]
 crons = [
-  "30 18 * * 0",
+  "30 18 * * SUN",
   "30 18 1 * *"
 ]
 
