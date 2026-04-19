@@ -1,0 +1,39 @@
+name: Undeploy zenos-publications-jobs
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment to undeploy"
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  undeploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Undeploy Production worker
+        if: ${{ github.event.inputs.environment == 'production' }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: delete
+
+      - name: Undeploy Staging worker
+        if: ${{ github.event.inputs.environment == 'staging' }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: delete --env staging
